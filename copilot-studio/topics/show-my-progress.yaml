@@ -1,0 +1,39 @@
+# Topic: Show My Progress
+
+## Trigger Phrases
+- "Show me my progress"
+- "How am I doing"
+- "What's left to read"
+- "My learning path"
+- "What should I read next"
+
+## Conversation Flow
+
+### Step 1: Identify Developer
+- Use the signed-in user's email from Teams context (System.User.Email)
+- If not available, ask: "What's your email address?"
+
+### Step 2: Call Action
+- **Call Power Automate flow**: Query Learning Path Items from Dataverse
+- Filter by developer email, sort by sequence
+- Returns: list of items with title, category, status
+
+### Step 3: Display Progress
+```
+Here's your learning path progress:
+
+✅ Completed:
+{CompletedItems}
+
+📖 Remaining:
+{RemainingItems}
+
+Next recommended: {NextDocument}
+
+Would you like to know more about any of these topics?
+```
+
+## Notes
+- The flow queries Dataverse Learning Path Item table filtered by the developer's profile.
+- Items are grouped by status (Complete vs Not Started/In Progress).
+- The "next recommended" is the lowest sequence number with status "Not Started".

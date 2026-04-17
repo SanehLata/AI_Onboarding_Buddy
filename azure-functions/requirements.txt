@@ -1,0 +1,8 @@
+azure-functions
+azure-ai-projects>=2.0.0
+azure-identity
+azure-cosmos
+msgraph-sdk
+opentelemetry-sdk
+azure-core-tracing-opentelemetry
+azure-monitor-opentelemetry

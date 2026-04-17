@@ -1,0 +1,32 @@
+# Topic: Mark Document Complete
+
+## Trigger Phrases
+- "I finished reading"
+- "Mark as done"
+- "Completed the"
+- "Done with the"
+- "I've read the"
+
+## Conversation Flow
+
+### Step 1: Ask Which Document
+"Which document did you complete?"
+- Variable: `DocumentTitle` (Text)
+
+### Step 2: Call Action
+- **Call Power Automate Flow 4: Update Progress**
+- Inputs: developer email (from Teams context), DocumentTitle
+- The flow finds the matching Learning Path Item in Dataverse and updates status to "Complete"
+- Returns: confirmation text with remaining count
+
+### Step 3: Confirm
+```
+✅ Great, I've marked "{DocumentTitle}" as complete!
+You have {RemainingCount} items remaining in your learning path.
+
+Your next recommended document is: {NextDocument}
+```
+
+## Notes
+- Document title matching is fuzzy — the Power Automate flow uses a "contains" filter.
+- If no match is found, the flow returns an error and the agent asks the user to clarify.

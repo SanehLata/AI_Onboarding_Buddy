@@ -1,0 +1,68 @@
+# Topic: New Joiner Onboarding
+
+## Trigger Phrases
+- "Hi, I'm new here"
+- "I'm joining the team"
+- "Help me onboard"
+- "I'm a new developer"
+- "I just started"
+- "First day"
+
+## Conversation Flow
+
+### Step 1: Welcome Message
+```
+Welcome to TechCorp! I'm your Onboarding Buddy and I'll help you get fully set up today.
+Let me collect a few details so I can provision your access and create your personalised learning path.
+```
+
+### Step 2: Collect Profile (Question Nodes)
+
+| Question | Variable | Validation |
+|----------|----------|------------|
+| "What's your full name?" | `FullName` | Text, required |
+| "What's your email address?" | `Email` | Email entity, required |
+| "Which team are you joining?" | `Team` | Choice: Payments, Risk & Compliance, Platform Engineering, Data & Analytics |
+| "What's your role?" | `Role` | Text, required |
+| "What's your experience level?" | `ExperienceLevel` | Choice: Junior, Mid, Senior |
+| "Who's your manager? (email address)" | `ManagerEmail` | Email entity, required |
+
+### Step 3: Confirmation
+```
+Here's what I have:
+- Name: {FullName}
+- Email: {Email}
+- Team: {Team}
+- Role: {Role}
+- Level: {ExperienceLevel}
+- Manager: {ManagerEmail}
+
+Is everything correct?
+```
+
+### Step 4: Condition — "Are these correct?"
+- **Yes** → Proceed to Step 5
+- **No** → Loop back to Step 2
+
+### Step 5: Call Actions (sequential)
+1. **Call Flow 1: Provision Access** → Inputs: all 6 variables → Returns: provisioning summary
+2. **Call Flow 2: Send Welcome Email** → Inputs: Email, FullName, Team → Returns: confirmation
+3. **Call Flow 3: Generate Learning Path** → Inputs: Team, Role, ExperienceLevel, DeveloperProfileId → Returns: learning path text
+
+### Step 6: Display Results
+```
+You're all set, {FullName}! Here's what I've done:
+
+{ProvisioningSummary}
+
+Your personalised learning path:
+{LearningPathText}
+
+Feel free to ask me any questions about systems, tools, or processes — I'm here to help!
+```
+
+## Notes
+- This topic is built visually in Copilot Studio using the topic designer.
+- The YAML above is a design spec — actual implementation is drag-and-drop in the portal.
+- Question nodes use Copilot Studio's built-in entity types for email validation.
+- "Choice" questions display as selectable options to the user in Teams.
