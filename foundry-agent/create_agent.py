@@ -2,21 +2,20 @@
 Create the OnboardingPathAgent in Azure Foundry Agent Service.
 
 Run this script once to create the agent. After creation, the agent persists
-in your Foundry project and is referenced by name from Azure Functions.
+in your Foundry project and is referenced by ID from Azure Functions.
 
 Usage:
-    az login
-    export FOUNDRY_PROJECT_ENDPOINT="https://<resource>.services.ai.azure.com/api/projects/<project>"
+    set FOUNDRY_API_KEY=<your-api-key>
+    set FOUNDRY_API_BASE=<your-endpoint>
     python create_agent.py
+
+Or pass values directly in the script for first-time setup.
 """
 
 import os
 import sys
-from azure.identity import DefaultAzureCredential
-from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import PromptAgentDefinition
+from openai import AzureOpenAI
 
-# Load agent instructions from config
 AGENT_NAME = "OnboardingPathAgent"
 MODEL = "gpt-4o"
 
@@ -46,44 +45,50 @@ Return an array of objects with: title, category, sequence, relevance_reason."""
 
 
 def main():
-    endpoint = os.environ.get("FOUNDRY_PROJECT_ENDPOINT")
-    if not endpoint:
-        print("ERROR: Set FOUNDRY_PROJECT_ENDPOINT environment variable")
-        print("Example: https://<resource>.services.ai.azure.com/api/projects/<project>")
+    api_key = os.environ.get("FOUNDRY_API_KEY")
+    api_base = os.environ.get("FOUNDRY_API_BASE")
+
+    if not api_key or not api_base:
+        print("ERROR: Set environment variables:")
+        print("  set FOUNDRY_API_KEY=<your-api-key>")
+        print("  set FOUNDRY_API_BASE=<your-cognitive-services-endpoint>")
+        print("Example: https://onboarding-buddy-foundry.cognitiveservices.azure.com/")
         sys.exit(1)
 
-    print(f"Connecting to Foundry: {endpoint}")
-    client = AIProjectClient(
-        endpoint=endpoint,
-        credential=DefaultAzureCredential(),
+    print(f"Connecting to: {api_base}")
+
+    client = AzureOpenAI(
+        api_key=api_key,
+        azure_endpoint=api_base,
+        api_version="2025-01-01-preview",
     )
 
     # Check if agent already exists
-    try:
-        existing = client.agents.get_agent(name=AGENT_NAME)
-        print(f"Agent already exists: {existing.name} (ID: {existing.id})")
-        print("To recreate, delete the existing agent first.")
-        return
-    except Exception:
-        pass  # Agent doesn't exist, create it
+    existing_agents = client.beta.assistants.list()
+    for agent in existing_agents.data:
+        if agent.name == AGENT_NAME:
+            print(f"Agent already exists: {agent.name} (ID: {agent.id})")
+            print("To recreate, delete the existing agent first.")
+            return
 
     # Create the agent
     print(f"Creating agent: {AGENT_NAME} with model: {MODEL}")
-    agent = client.agents.create_agent(
+    agent = client.beta.assistants.create(
         name=AGENT_NAME,
-        definition=PromptAgentDefinition(
-            model=MODEL,
-            instructions=INSTRUCTIONS,
-        ),
+        model=MODEL,
+        instructions=INSTRUCTIONS,
+        temperature=0.3,
     )
 
-    print(f"Agent created successfully!")
+    print(f"\nAgent created successfully!")
     print(f"  Name: {agent.name}")
     print(f"  ID:   {agent.id}")
     print(f"  Model: {MODEL}")
     print()
+    print("Add this to your Azure Function App environment variables:")
+    print(f"  FOUNDRY_AGENT_ID={agent.id}")
+    print()
     print("The agent is now available for use by Azure Functions.")
-    print("Reference it by name: 'OnboardingPathAgent'")
 
 
 if __name__ == "__main__":

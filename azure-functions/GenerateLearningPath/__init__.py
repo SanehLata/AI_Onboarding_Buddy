@@ -2,8 +2,7 @@ import azure.functions as func
 import json
 import os
 import logging
-from azure.identity import DefaultAzureCredential
-from azure.ai.projects import AIProjectClient
+from openai import AzureOpenAI
 
 logger = logging.getLogger("GenerateLearningPath")
 
@@ -22,15 +21,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             f"team={team} role={role} level={level}"
         )
 
-        client = AIProjectClient(
-            endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-            credential=DefaultAzureCredential(),
+        openai_client = AzureOpenAI(
+            api_key=os.environ["FOUNDRY_API_KEY"],
+            azure_endpoint=os.environ["FOUNDRY_API_BASE"],
+            api_version="2025-01-01-preview",
         )
 
-        agent = client.agents.get_agent(name="OnboardingPathAgent")
-        logger.info(f"[GENERATE_PATH] using agent: {agent.name} (ID: {agent.id})")
-
-        thread = client.agents.threads.create()
+        agent_id = os.environ["FOUNDRY_AGENT_ID"]
 
         prompt = f"""Generate a personalised learning path for a new developer with these details:
 - Team: {team}
@@ -72,16 +69,23 @@ Return ONLY a valid JSON array with these fields for each item:
 
 Return ONLY the JSON array, no markdown formatting, no explanation."""
 
-        client.agents.messages.create(
+        thread = openai_client.beta.threads.create()
+
+        openai_client.beta.threads.messages.create(
             thread_id=thread.id, role="user", content=prompt
         )
 
-        run = client.agents.runs.create_and_wait(
-            thread_id=thread.id, agent_id=agent.id
+        run = openai_client.beta.threads.runs.create_and_poll(
+            thread_id=thread.id, assistant_id=agent_id
         )
 
-        messages = client.agents.messages.list(thread_id=thread.id)
-        result_text = messages.data[0].content[0].text.value
+        messages = openai_client.beta.threads.messages.list(thread_id=thread.id)
+
+        result_text = ""
+        for msg in messages.data:
+            if msg.role == "assistant":
+                result_text = msg.content[0].text.value
+                break
 
         clean_text = result_text.strip()
         if clean_text.startswith("```"):
