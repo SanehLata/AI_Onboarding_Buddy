@@ -101,9 +101,14 @@ Return ONLY the JSON array, no markdown formatting, no explanation."""
             f"doc_count={len(learning_path)}"
         )
 
+        # Format as readable text
+        formatted = "📚 Your Personalised Learning Path:\n\n"
+        for item in learning_path:
+            formatted += f"{item['sequence']}. {item['title']} ({item['category']}) — {item['relevance_reason']}\n"
+        
         return func.HttpResponse(
-            json.dumps(learning_path, indent=2),
-            mimetype="application/json",
+            formatted,
+            mimetype="text/plain",
             status_code=200,
         )
 
